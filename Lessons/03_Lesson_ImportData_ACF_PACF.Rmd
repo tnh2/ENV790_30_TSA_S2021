@@ -21,6 +21,8 @@ It's useful to designate one code chunk to load packages on the beginning of the
 library(lubridate)
 library(ggplot2)
 
+library(forecast)
+
 ```
 
 ## Importing data
@@ -77,8 +79,8 @@ plot(inflow_data[,"HP1"],type="l") #The type "l" tells you want a line plot chec
                                   #for other types of plots
 
 plot(inflow_data[,"HP1"],type="l",col="blue") #Change the color of the series
-plot(inflow_data[,"HP1"],type="l",col="blue",ylab="Inflow [m3/s]") 
-plot(inflow_data[,"HP1"],type="l",col="blue",ylab="Inflow [m3/s]",main="Historical Inflow Data for HP1") 
+plot(inflow_data[,"HP1"],type="l",col="blue",ylab=expression("Inflow [m"^3* "/s]")) 
+plot(inflow_data[,"HP1"],type="l",col="blue",ylab=expression("Inflow [m"^3* "/s]"),main="Historical Inflow Data for HP1") 
 
 #Additional - Suppose you want to add a line with the mean
 abline(h=mean(inflow_data[,"HP1"]),col="red")
