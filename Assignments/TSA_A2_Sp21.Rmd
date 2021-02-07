@@ -1,15 +1,13 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2021"
-<<<<<<< HEAD
+
 subtitle: "Assignment 2 - Due date 02/03/21"
 author: "Thomas Hancock"
-=======
-subtitle: "Assignment 2 - Due date 02/05/21"
-author: "Student Name"
->>>>>>> 409557221d90b62d6b77ba821fabfbeb5318cb3e
+
 output: pdf_document
 geometry: margin=2.54cm
 ---
+
 
 ## Submission Instructions
 
@@ -106,11 +104,12 @@ abline(h = RE_avg, col = "Blue")
 plot.ts(Energy_ts[,3], main = "Time Series of Total Hydro Power Consumption", axes = TRUE, xlab = "Date", ylab = "Consumption (tBTU)")
 abline(h = Hydro_avg, col = "Blue")
 ```
-> Answer: In the first plot, we see that Biomass Production has generally increased from 1970 to present, with a period of growth in the late '70s until the late '80s or so, followed by a stagnation which included wide variations in production until the '00s. Biomass Production then grew for another decade or so, before starting to have large variations and potential stagnation again. There is potentially a large drop in Biomass Production around 2020, but it is unclear if that is an anomaly since it occurs at the end of the dataset.
+ 
+ > Answer: In the first plot, we see that Biomass Production has generally increased from 1970 to present, with a period of growth in the late '70s until the late '80s or so, followed by a stagnation which included wide variations in production until the '00s. Biomass Production then grew for another decade or so, before starting to have large variations and potential stagnation again. There is potentially a large drop in Biomass Production around 2020, but it is unclear if that is an anomaly since it occurs at the end of the dataset.
 
 > In the second plot, we see that Total Renewable Production has grown significantly since the early 2000s. While there was a slight growth trend, largely obscured by regular variation, between the '70s and '00s, the recent growth has been quite pronounced.
 
-In the third plot, we see
+> In the third plot, we see a lot of variation between neighboring years as well as perhaps a cyclical pattern every decade or so. There is a slight downward trend after 2000 (these decades seem to usually be below the average), but it is much less pronounced than the later trends of the other two datasets.
 
 
 ## Question 5
@@ -130,7 +129,7 @@ Acf(Energy_ts[,1], lag.max = 40, main = "ACF for Biomass")
 Acf(Energy_ts[,2], lag.max = 40, main = "ACF for Total Renewables")
 Acf(Energy_ts[,3], lag.max = 40, main = "ACF for Hydro")
 ```
-> Answer:
+> Answer: The first two plots (Biomass and Total Renewables) are similar, with autocorrelation decreasing fairly regularly as lag increases (i.e., the impact of closer numbers is more significant than numbers that are farther away). However, the ACF plot for hydropower is different, showing a periodic (seasonal) trend in the ACF significance. Notably, there is a cycle that seems to be 12 months of high correlation. 
 
 
 ## Question 7
@@ -140,4 +139,4 @@ Pacf(Energy_ts[,1], lag.max = 40, main = "ACF for Biomass")
 Pacf(Energy_ts[,2], lag.max = 40, main = "ACF for Total Renewables")
 Pacf(Energy_ts[,3], lag.max = 40, main = "ACF for Hydro")
 ```
-> Answer:
+> Answer: The PACF values for each variable are much lower than the ACF values (as we would expect). Most of the values are much closer to the 95% significance level (blue dashed lines), with many values being statisically insignificant (at the 95% confidence level). There is also more of a cyclical pattern amongst the first two plots now (although it is a little hard to tell if there is a pattern or just a random distribution around 0), that was not present in the ACF plots. The last plot still looks a bit cyclical, but it is not as clear as the ACF.
