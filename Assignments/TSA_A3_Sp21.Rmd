@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2021"
 subtitle: "Assignment 3 - Due date 02/12/21"
-author: "Student Name"
+author: "Thomas Hancock"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -29,25 +29,102 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 ```{r}
 #Load/install required package here
+library(forecast)
+library(tseries)
+library(Kendall)
+library(xlsx)
+```
+
+```{r Load Data}
+raw_data <- read.xlsx("../Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", 
+                      header = TRUE, startRow = 10, sheetIndex = 1)
+
+energy_df <- data.frame(raw_data[-1,1], lapply(raw_data[-1,4:6], as.numeric)) # Convert to numeric values
+  
+n_series <- ncol(energy_df)-1
+
+n_obs <- nrow(energy_df)
+
+energy_ts <- ts(energy_df[2:(n_series+1)], start=c(1973,1), frequency = 12)
+
+name_list <- c("Biomass Production", "Renewable Production", "Hydroelectric Consumption")
 
 ```
+
 
 ##Trend Component
 
 ### Q1
 Create a plot window that has one row and three columns. And then for each object on your data frame, fill the plot window with time series plot, ACF and PACF. You may use the some code form A2, but I want all three plots on the same window this time. (Hint: watch videos for M4)
 
+```{r Q1}
+par(mfrow = c(1,3))
+for (i in 1:n_series) {
+  ts.plot(energy_ts[,i], main = paste0(name_list[i], " Time Series"), ylab = "tBTU")
+  Acf(energy_ts[,i], lag.max = 40, main = paste0(name_list[i], " ACF"))
+  Pacf(energy_ts[,i], lag.max = 40, main = paste0(name_list[i], " PACF"))
+}
+```
+
+
 ### Q2
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
 
+> Answer: The Total Biomas Energy Production appears to have a linear trend, but little to no seasonal trend. The Total Renewable Energy Production series also appears to have a linear trend and, perhaps, a very minor seasonal trend (it looks a little more evident than the previous series, but the seasonal trend may not be significant here). Lastly, the Hydroelectric Power Consumption trend seems to have a fairly evident seasonal trend, but it is not clear if there is a linear trend (there appears to be a slight downward progression, but there is also a lot of noise/variation).
+
 ### Q3
 Use the *lm()* function to fit a linear trend to the three time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
+
+```{r Q3}
+t <- c(1:n_obs)
+
+coeffs <- data.frame(row.names = name_list)
+
+for (i in (1:n_series)) {
+  model <- lm(energy_ts[,i] ~ t)
+  coeffs[i,1] <- model$coefficients[1]
+  coeffs[i,2] <- model$coefficients[2]
+  print(paste0(name_list[i], ":"))
+  print(summary(model))
+  cat("\n\n")
+
+}
+
+colnames(coeffs) <- c("beta0", "beta1")
+coeffs
+
+```
+> The first coefficient ("beta0") is the intercept of the linear regression, and the second coefficient ("beta1") is the slope. As such, we can see that the Biomass and Renewable series have positive trends (so they are increasing over time), whereas the Hydroelectric series has a negative (downward-sloping) trend so it is decreasing over time. The intercept units are the same units as the series (tBTU, I believe), and the slope units are tBTU/month. So, for example, the Biomass Energy Production model has an intercept of 135.5 tBTU and increases by 0.47 tBTU every month. These values match the general trends described visually in Question 2. All of them are statistically significant at the 0.001 level.
  
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and  compare with the plots from Q1. What happened? Did anything change?
 
+```{r Q4}
+detrend_ts <- energy_ts
+
+for (i in (1:n_series)) {
+  detrend_ts[,i] <- energy_ts[,i] - (coeffs[i,"beta0"] + coeffs[i,"beta1"]*t)
+  ts.plot(detrend_ts[,i], main = paste0(name_list[i], " Detrended Time Series"), ylab = "tBTU")
+}
+
+
+```
+
+> The plots now all seem more centered around 0 on the y-axis (almost as if they were just rotated up or down). Especially the Biomas and Renewable series that had larger slope coefficients in the linear model appear "flatter" now (less rise). There are still seasonal and stochastic variations, but there do not visually appear to be any linear trends in the series now.
+
+
 ### Q5
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. Did the plots change? How?
+
+```{r Q5}
+par(mfrow = c(1,2))
+for (i in 1:n_series) {
+  Acf(detrend_ts[,i], lag.max = 40, main = paste0(name_list[i], " Detrended ACF"))
+  Pacf(detrend_ts[,i], lag.max = 40, main = paste0(name_list[i], " Detrended PACF"))
+}
+```
+> The ACF and PACF plots changed a little bit, but not much. In particular, there is more evidence of seasonal variability, especially in the ACF plots. This change is particularly notable in the Renewable ACF plot. Presumably this difference is due to the removal of the linear trend, so any seasonal variation has a more prominent effect on the adjusted values (basically, the seasonal trends are less "lost" in the linear trend).
+
 
 ## Seasonal Component
 
@@ -56,10 +133,52 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Do the series seem to have a seasonal trend? Which serie/series? Use function *lm()* to fit a seasonal means model to this/these time series. Ask R to print the summary of the regression. Interpret the regression output. Save the regression coefficients for further analysis.
 
+```{r Q6}
+seas_coeffs <- data.frame(row.names = name_list)
+
+dummies <- seasonaldummy(energy_ts[,1]) # We could use any of the series
+
+for (i in (1:n_series)) {
+  model <- lm(energy_ts[,i] ~ dummies)
+  seas_coeffs[i,1:12] <- model$coefficients
+  print(paste0(name_list[i], ":"))
+  print(summary(model))
+  cat("\n\n")
+
+}
+
+colnames(seas_coeffs) <- names(model$coefficients) # More descriptive names
+
+```
+> The Hydroelectric series definitely seems to have a seasonal trend. The Renewable series seems to have a slight seasonal trend, at least when examining the ACF plot of the detrended series (Question 5). The Biomass series does not appear to have much seasonality. The regression coefficients in the model summaries show the impact that December (the intercept) has on the data, and then the other dummy variables relative to that. So, for example, January values for the Hydroelectric series model are 13.27 tBTU more than December, but the September values are 50.121 lower. We can also see from the significance indicators that there are not really any significant seasonal variables for the Biomass and Renewable series, as mentioned above. However, most of the seasonal variables for the Hydroelectric series are significant at the 0.05 level.
+
 ### Q7
 Use the regression coefficients from Q6 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
+
+```{r Q7}
+
+deseas_ts <- energy_ts
+
+
+for (i in (1:n_series)) {
+  for (k in (1:n_obs)) {
+    deseas_ts[k,i] <- energy_ts[k,i] - (seas_coeffs[i,1] + dummies[k,] %*% t(seas_coeffs[i,2:12]))
+  }
+  
+  ts.plot(deseas_ts[,i], main = paste0(name_list[i], " Deseason Time Series"), ylab = "tBTU")
+}
+
+```
+> All of them look a little bit "smoother" with fewer small oscillations (presumably oscillations from month to month). The Biomass and Renewable (first and second) series do not look very different otherwise, but this change is more noticeable for the hydroelectric series, which had much more seasonal variation originally. The large variations are now less frequent - the original data had many oscillations (presumably due to seasonal variations), but with the deseasoning, the variations seem to occur more on a timescale of years.
 
 ### Q8
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. Did the plots change? How?
 
-
+```{r Q8}
+par(mfrow = c(1,2))
+for (i in 1:n_series) {
+  Acf(deseas_ts[,i], lag.max = 40, main = paste0(name_list[i], " Deseasonded ACF"))
+  Pacf(deseas_ts[,i], lag.max = 40, main = paste0(name_list[i], " Deseasonded PACF"))
+}
+```
+> The Biomass and Renewable (first and second set) are not particularly changed from the original plots. There was a slight seasonal trend in the Renewable (second time series) series, which is not gone. The Hydroelectric series (third series) is notably changed because it had a strong seasonal component that is now removed. For all of them, the ACF now is "smoother" (no periodic "bumps" at regular lag intervals), and the PACF shows little to no significant correlation with lags beyond the first few.
