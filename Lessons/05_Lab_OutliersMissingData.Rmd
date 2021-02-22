@@ -1,7 +1,7 @@
 ---
 title: "Lab 5: Outliers and Missing Data"
 author: "Luana Lima"
-date: "02/11/2021"
+date: "02/17/2021"
 output: pdf_document
 ---
 
@@ -73,9 +73,9 @@ ggplot(wind_data, aes(x = DATE, y = AWND.1)) +
   ylab("Average Wind Speed") 
 
 ```
-## Using pre-built functio to clean series
+## Using pre-built function to clean series
 
-tsclean() from package forecast identify and replace outliers and missing values in a time series using linear interpolation.
+tsclean() from package 'forecast' identify and replace outliers and missing values in a time series using linear interpolation.
 
 ```{r}
 
@@ -83,7 +83,7 @@ clean_wind_data <- tsclean(ts_wind_data)  #object should be a time series - can 
 
 full_wind_data <- data_frame(Date=wind_data$DATE, Wind = wind_data$AWND.1, Wind_Clean = as.numeric(clean_wind_data))
 
-ggplot(full_wind_data, ) +
+ggplot(full_wind_data) +
   geom_line(aes(x = Date, y = Wind_Clean), color = "red") +
   geom_line(aes(x = Date, y = Wind), color = "black") +
   ylab("Average Wind Speed") 
@@ -136,6 +136,7 @@ Discussion: Why the missing values??
 
 #Ex5: Try to reproduce the trend component from decompose().
 
+<<<<<<< HEAD
 window <-  6
 mavg <- array(NA, length(clean_wind_data-12))
 
@@ -149,6 +150,10 @@ ggplot() +
   geom_line(aes(x = c(1:length(mavg)), y = wind_trend), color = "red")
 
 #Ex6: Try to reproduce the seasonal component from decompose()
+=======
+#Ex6: Try to reproduce the seasonal component from decompose().
+
+>>>>>>> 039bfb2d387fdd5e4b7d4c9d8e9f530496a36ebb
 
 ```
 
