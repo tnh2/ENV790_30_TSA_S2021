@@ -70,7 +70,7 @@ Common plots for outlier detection are histograms and boxplots. Histograms will 
 
 ggplot(wind_data, aes(x = DATE, y = AWND.1)) +
   geom_line() +
-  xlab("Average Wind Speed") 
+  ylab("Average Wind Speed") 
 
 ```
 ## Using pre-built functio to clean series
@@ -79,7 +79,7 @@ tsclean() from package forecast identify and replace outliers and missing values
 
 ```{r}
 
-clean_wind_data <- tsclean(ts_wind_data)  #object should be a time series
+clean_wind_data <- tsclean(ts_wind_data)  #object should be a time series - can be used with seasonal or trend data
 
 full_wind_data <- data_frame(Date=wind_data$DATE, Wind = wind_data$AWND.1, Wind_Clean = as.numeric(clean_wind_data))
 
@@ -100,7 +100,7 @@ The random component is the time series without seasonal and trend component. Le
 
 Additional info on decompose()
 
-1) You have two options: alternative and multiplicative. Multiplicative models exhibit a change in frequency over time.
+1) You have two options: alternative (additive?) and multiplicative. Multiplicative models exhibit a change in frequency over time.
 
 2) The trend is not a straight line because it uses a moving average method to detect trend. 
 
@@ -118,7 +118,7 @@ wind_random <- decompose_wind_data$random
 wind_trend <- decompose_wind_data$trend
 wind_seasonal <- decompose_wind_data$seasonal   
 
-#Ex3: Create one data frame with all three vector and teh Date columns from wind_data
+#Ex3: Create one data frame with all three vector and the Date columns from wind_data
 df_wind_decomposed <- data.frame(wind_trend,wind_seasonal,wind_random)
 
 #Ex4: Inspect the data frame using head() and tail()
@@ -129,12 +129,26 @@ tail(df_wind_decomposed,10)
 ```
 
 Discussion: Why the missing values?? 
+> Moving average
 
 ## Coding challenge
 ```{r}
 
 #Ex5: Try to reproduce the trend component from decompose().
 
+window <-  6
+mavg <- array(NA, length(clean_wind_data-12))
+
+for (i in 7:length(clean_wind_data)) {
+  #mavg[i] <- mean(clean_wind_data[c((i-window):(i-1), (i+1):(i+window))])
+  mavg[i] <- mean(clean_wind_data[(i-window):(i+window)])
+}
+
+ggplot() +
+  geom_line(aes(x =c(1:length(mavg)), y=ma(clean_wind_data, 12))) #+
+  geom_line(aes(x = c(1:length(mavg)), y = wind_trend), color = "red")
+
+#Ex6: Try to reproduce the seasonal component from decompose()
 
 ```
 
