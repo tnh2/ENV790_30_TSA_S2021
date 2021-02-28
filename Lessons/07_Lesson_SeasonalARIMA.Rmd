@@ -239,3 +239,4 @@ Pacf(ARIMA_autofit$residuals,lag.max=40)
 
 ## Discussion: Which one to do? ARIMA or SARIMA?
 
+> ARIMA because it has a lower AIC?
