@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2021"
 subtitle: "Assignment 4 - Due date 02/25/21"
-author: "Student Name"
+author: "Thomas Hancock"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -21,9 +21,18 @@ Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewabl
 
 R packages needed for this assignment:"forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
-```{r}
-#Load/install required package here
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), tidy=FALSE) 
+```
 
+```{r message=FALSE}
+#Load/install required package here
+library(readxl)
+library(lubridate)
+library(tidyverse)
+library(forecast)
+library(tseries)
+library(Kendall)
 ```
 
 
@@ -31,26 +40,95 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 For this part you will once again work only with the following columns: Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption. Create a data frame structure with these three time series and the Date column. Don't forget to format the date object.
 
-```{r}
+```{r Load data}
+raw_energy <- read_excel("../Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", col_names =  TRUE, skip = 10)
+raw_energy <- raw_energy[-1,] #Remove row that has units (they are all the same - Trillion BTU)
+```
 
+
+```{r}
+energy_small <- raw_energy[,c(4:6)] #Create data frame with subset of data
+
+energy_small <-  data.frame(as.Date(raw_energy$Month), lapply(energy_small, as.numeric))  # Set data to numeric so we can do numeric analysis
+
+energy_small <- rename(energy_small, Month = as.Date.raw_energy.Month.)
+
+head(energy_small) #Check subset
+
+numobs <- ncol(energy_small)-1
+
+energy_ts <- ts(energy_small[,-1],
+                start = c(year(energy_small$Month[1]), month(energy_small$Month[1])),
+                frequency = 12)
 ```
 
 ### Q1
 Now let's try to difference these three series using function diff(). Start with the original data from part (b). Try differencing first at lag 1 and plot the remaining series. Did anything change? Do the series still seem to have trend?
 
+```{r Q1}
+energy_diff <- diff(energy_ts, differences = 1)
+
+head(energy_diff)
+tail(energy_diff)
+
+name_list <- c("Biomass", "Total Renewables", "Hydroelectric")
+
+for (i in 1:numobs) {
+  par(mfrow = c(1,2))
+  plot.ts(energy_ts[,i], main = paste0(name_list[i], " - Original"), ylab = "tBTU")
+  plot.ts(energy_diff[,i], main = paste0(name_list[i], " - Differenced"), ylab = "tBTU")
+}
+```
+> The trends that can be seen in the original plots are not present in the differenced series (the differenced series averages seem to be 0 across time, even though there is still scatter).
+
 ### Q2
 Compute Mann-Kendall and Spearman's Correlation Rank Test for each time series. Ask R to print the results. Interpret the results. 
+```{r Yearly-data}
+energy_yearly <- energy_small %>% 
+  group_by(year(Month)) %>% 
+  summarise(Year_Biomass= mean(Total.Biomass.Energy.Production),
+            Year_Renewable = mean(Total.Renewable.Energy.Production), 
+            Year_Hydro = mean(Hydroelectric.Power.Consumption))
+```
+
+
+```{r Q2}
+
+my_year <- c(year(first(energy_small$Month)):year(last(energy_small$Month)))
+
+for (i in 1:numobs) {
+  SMKtest <- SeasonalMannKendall(energy_ts[,i])
+  print(paste0(name_list[i], " Results for Seasonal Mann Kendall"))
+  print(summary(SMKtest))
+  cat("\n")
+  
+  sp_rho=cor(energy_yearly[,(i+1)],my_year,method="spearman")
+  print(paste0(name_list[i], " Results from Spearman Correlation"))
+  print(sp_rho)
+  cat("\n\n")
+}
+
+```
+> It looks like there is a strong upward trend across the years for the biomass and total renewable datasets, as evidenced by the high (close to 1) Spearman correlation value and the Seasonal Mann Kendall test with p < 0.01 (statistically significant). For they hdyroelectric series, there is evidence of a downward/negative trend based on the SMK p value < 0.01 and a moderately negative Spearman correlation (about -0.5). This smaller magnitude correlation implies that there is less of a trend in the hydroelectric series than the other two, but it is still statistically significant. This result matches what we have seen in the plots and earlier assignments. 
+ 
 
 ## Decomposing the series
-
 For this part you will work only with the following columns: Solar Energy Consumption and Wind Energy Consumption. 
 
 ### Q3
 
 Create a data frame structure with these two time series only and the Date column. Drop the rows with *Not Available* and convert the columns to numeric. You can use filtering to eliminate the initial rows or conver to numeric and then use the drop_na() function. If you are familiar with pipes for data wrangling, try using it!
 
-```{r}
+```{r Q3}
+solwin <- data.frame(as.Date(raw_energy$Month), 
+                     lapply(raw_energy[,c("Solar Energy Consumption", "Wind Energy Consumption")], 
+                            as.numeric))
+solwin <- solwin %>% 
+  rename(., Month = as.Date.raw_energy.Month.) %>% 
+  drop_na()
 
+head(solwin)
+tail(solwin)
 ```
 
 ### Q4
@@ -60,26 +138,59 @@ Hint: use *scale_x_date(date_breaks = "5 years", date_labels = "%Y")")*
 
 Try changing the color of the wind series to blue. Hint: use *color = "blue"*
 
-```{r}
+```{r Q4}
+# To get both on the same plot with a legend (not sure if that's what is intended), we need
+# to change the structure of the data frame
+solwin_long <- pivot_longer(solwin, c(2:3), names_to = "Type", values_to = "Consumption")
 
+# Plot with two geom_line features (I don't know how to add a legend to this)
+# ggplot(solwin) +
+#   geom_line(aes(x = Month, y = Solar.Energy.Consumption)) +
+#   geom_line(aes(x = Month, y = Wind.Energy.Consumption), color = "blue") +
+#   scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+#   labs(x = "Date", y = "tBTU", title = "Energy Consumption") 
+  
+# Plot using the long data format to allow for a legend
+ggplot(solwin_long) +
+  geom_line(aes(x = Month, y = Consumption, color = Type)) +
+  scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+  labs(x = "Date", y = "tBTU", title = "Energy Consumption") +
+  scale_color_manual(values = c("black", "blue"),labels = c("Solar", "Wind"))
 ```
 
 ### Q5
 
 Transform wind and solar series into a time series object and apply the decompose function on them using the additive option. What can you say about the trend component? What about the random component? Does the random component look random? Or does it appear to still have some seasonality on it?
 
-```{r}
+```{r Q5}
+solwin_ts <- ts(solwin[,-1], start = c(year(solwin$Month[1]), month(solwin$Month[1])), frequency = 12)
 
+decomp_sol <- decompose(solwin_ts[,1], "additive")
+decomp_wind <- decompose(solwin_ts[,2], "additive")
+
+plot(decomp_sol)
+plot(decomp_wind)
 ```
+> The trend component for both series appears to be flat and very small up until the early 2000s. Then both series increase significantly (almost exponentially). Both random components have repeating peaks and troughs that look cyclical and seasonal. The repetitions are fairly equal in magnitude within each series until about 2010, at which point they get smaller for a few years, then start growing in magnitude up through the end (2021). This randomness definitely does not appear to be truly random, including what appears to be some seasonality and time-dependent change in magnitude.
+
 
 ### Q6
 
 Use the decompose function again but now change the type of the seasonal component from additive to multiplicative.
 What happened to the random component this time? 
-```{r}
+```{r Q6}
+decomp_sol_mult <- decompose(solwin_ts[,1], "multiplicative")
+decomp_wind_mult <- decompose(solwin_ts[,2], "multiplicative")
+
+plot(decomp_sol_mult)
+plot(decomp_wind_mult)
 
 ```
+> The random component is now larger in magnitude at the beginning of each time series up until about 1990 for solar and 2000 for wind. Then, the random component decreases to much smaller variations. There seems to be less repetition in the random component, but there may still be a small seasonal element.
+
 
 ### Q7
 
 When fitting a model to this data, do you think you need all the historical data? Think about the date from 90s and early 20s. Are there any information from those year we might need to forecast the next six months of Solar and/or Wind consumption. Explain your response.
+
+> The earliest data (from the 1980s and early 1990s) probably are not very helpful for creating a forecast of solar or wind power consumption. Since there was little to no growth and very little overall usage of these energy sources, those historical data do not seem to provide much information to help predict what the future consumption will be. Especially since the "shape" of the data has changed (i.e., going from a fairly flat line to a near-exponential growth), it may be better to not include the earlier data or at least use a model that does not weight those data heavily.

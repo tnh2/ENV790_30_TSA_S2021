@@ -4,7 +4,7 @@ author: "Luana Lima"
 date: "02/24/2021"
 output: pdf_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ## Objectives
@@ -40,7 +40,7 @@ library(tidyverse)
 
 ```{r}
 #Importing time series data from text file
-raw_inflow_data <- read.table(file="../Data/inflowtimeseries.txt",header=FALSE,skip=0)
+raw_inflow_data <- read.table(file="./Data/inflowtimeseries.txt",header=FALSE,skip=0)
 
 #Trim the table to include only columns you need
 nhydro <- ncol(raw_inflow_data)-2
@@ -80,7 +80,9 @@ Since we are working with non-seasonal ARIMA, we need to decompose the series an
 ```{r}
 #Exercise 1: Using R decompose function to decompose the inflow time series for HP15
 
-
+iHP = 15
+decomp_inflow <- decompose(ts_inflow_data[,iHP], "additive")
+plot(decomp_inflow)
 
 ```
 
@@ -91,16 +93,19 @@ The ACF and PACF from the seasonal adjusted series will help you specify compone
 ```{r}
 
 #Exercise 2: Creating non-seasonal inflow series for HP 15 using seasadj() function
-
-
+non_seas <- seasadj(decomp_inflow)
+plot(non_seas)
 
 #Exercise 3: Compare ACFs for full series and deseason series
 par(mfrow=c(1,2))
-
+Acf(ts_inflow_data[,15])
+Acf(non_seas)
 
 
 #Exercise 4: Compare PACFs for full series and deseason series
 par(mfrow=c(1,2))
+Pacf(ts_inflow_data[,15])
+Pacf(non_seas)
 
 
 ```
